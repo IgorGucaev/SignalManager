@@ -32,7 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SQLiteAdapter\SQLiteAdapter.csproj" />
+    <ProjectReference Include="..\Abstractions\EventsManager.LocalEventStorage.Abstractions.csproj" />
+    <ProjectReference Include="..\Core\EventsManager.LocalEventStorage.Core.csproj" />
   </ItemGroup>
 
 </Project>

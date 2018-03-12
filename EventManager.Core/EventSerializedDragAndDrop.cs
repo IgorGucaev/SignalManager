@@ -19,7 +19,8 @@ namespace EventManager.Core
 
         public IEnumerable<string> Drag(DateTime fromIncluded, DateTime toExcluded)
         {
-            return _Cache.GetSignalsSerialized(fromIncluded, toExcluded);
+            throw new Exception();
+            //return _Cache.GetSignalsSerialized(fromIncluded, toExcluded);
         }
 
         public bool Drop(IEnumerable<string> events)

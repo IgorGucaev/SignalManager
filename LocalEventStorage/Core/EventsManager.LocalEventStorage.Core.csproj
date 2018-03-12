@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CassandraSignalCache.txt" />
+    <None Remove="Helpers\CassandraHelper.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="CassandraSignalCache.txt" />
+    <Compile Include="Helpers\CassandraHelper.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="2.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="1.1.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SQLiteAdapter\SQLiteAdapter.csproj" />
+    <ProjectReference Include="..\Abstractions\EventsManager.LocalEventStorage.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,47 @@
+//using System;
+//using System.Collections.Generic;
+//using Xunit;
+//using EventsStore.Core;
+//using EventsStore.Abstractions;
+//using System.Diagnostics;
+
+//namespace EventsStore.Test
+//{
+//    public class CassandraTest
+//    {
+//        [Fact]
+//        public void Test1()
+//        {
+//            ISignalCacheSettings settings = new CassandraSignalCacheSettings()
+//                .Add("address", "127.0.0.1")
+//                .Add("keyspace", "signals")
+//                .Add("table", "antenna")
+//                .Add("dateColumn", "date");
+
+//            ISignalCache<AntennaData> cache = new CassandraSignalCache<AntennaData>(settings, new JsonMessageSerializer<AntennaData>());
+
+//            int i = 0;
+
+//            Stopwatch sw = new Stopwatch();
+//            sw.Start();
+//            while (i < 1000)
+//            {
+//                cache.Write(new AntennaData(Guid.NewGuid().ToString(), 1, DateTime.Now));
+//                i++;
+//            }
+//            sw.Stop();
+//            IEnumerable<AntennaData> signals = cache.GetSignals(DateTime.MinValue, DateTime.Now);
+
+//            cache.Truncate();
+//          //  session.CreateKeyspaceIfNotExists("signals");
+//          //  session.Execute("CREATE TABLE IF NOT EXISTS signals.antenna (date timestamp, epc text, value decimal, PRIMARY KEY (date, epc))");
+
+//           // string json = "{ \"value\" : \"5\", \"date\" : \"2018-03-05 12:54:22.233 GMT\", \"epc\" : \"829aa84a-4bba-411f-a4fb-38167a987cda\"}";
+
+//         ///   session.Execute($"INSERT INTO signals.antenna JSON '{json}'");
+//            //    session.Execute($"insert into signals.antenna (deviceId, date, value) values ('dev1', '{DateTime.Now.ToString("d")}', '1')");
+//        //    var RowSet = session.Execute("SELECT json * FROM signals.antenna");
+//        //    var row = RowSet.First()[0];
+//        }
+//    }
+//}

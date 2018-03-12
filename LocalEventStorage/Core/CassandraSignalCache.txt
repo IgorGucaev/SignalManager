@@ -1,0 +1,98 @@
+﻿/*using Cassandra;
+using EventsStore.Abstractions;
+using EventsStore.Core.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace EventsStore.Core
+{
+    public class CassandraSignalCache<T> : ISignalCache<T>
+    {
+        private readonly string INSERT_JSON_QUERY = $"insert into {{0}}.{{1}} json '{{2}}'";
+        private readonly string SELECT_JSON_QUERY = $"select json * from {{0}}.{{1}}";
+        private readonly string TRUNCATE_QUERY = "truncate {0}.{1}";
+        private const string dateFormat = "yyyy-MM-dd HH:mm:ss \"GMT\"zzz";
+
+        private ISignalCacheSettings _Settings;
+        private ISession _Session;
+        private string _Keyspace;
+        private string _Table;
+        private string _DateColumnName;
+        private IMessageSerializer<T> _Serializer;
+
+        public CassandraSignalCache(ISignalCacheSettings settings, IMessageSerializer<T> serializer)
+        {
+            _Settings = settings;
+            string address = _Settings.GetValue<string>("address");
+            _Serializer = serializer;
+            _Keyspace = settings.GetValue<string>("keyspace");
+            _Table = settings.GetValue<string>("table");
+            _DateColumnName = _Settings.GetValue<string>("dateColumn");
+
+            bool tableExist = CassandraHelper.IsExist(address, _Keyspace, _Table);
+
+            if (!tableExist)
+                throw new Exception($"Table {settings.GetValue<string>("table")} does not exist on cluster.");
+
+            Cluster cluster = Cluster.Builder().AddContactPoint(address).Build();
+            this._Session = cluster.Connect();
+
+            this._Session.CreateKeyspaceIfNotExists(_Keyspace);
+        }
+
+        public void Truncate()
+        {
+            _Session.Execute(String.Format(TRUNCATE_QUERY, _Keyspace, _Table));
+        }
+
+        public void Disconnect()
+        {
+            this._Session?.Dispose();
+        }
+
+        public void Write(T signal)
+        {
+            this.Write(_Serializer.Serialize(signal));
+        }
+
+        public void Write(IEnumerable<T> signals)
+        {
+            foreach (var signal in signals)
+            {
+                _Session.Execute(String.Format(INSERT_JSON_QUERY, _Keyspace, _Table, _Serializer.Serialize(signal)));
+            }
+        }
+
+        public void Write(string serialized)
+        {
+            RowSet set = _Session.Execute(String.Format(INSERT_JSON_QUERY, _Keyspace, _Table, serialized));
+        }
+
+        public void Write(string[] serialized)
+        {
+            foreach (var json in serialized)
+            {
+                _Session.Execute(String.Format(INSERT_JSON_QUERY, _Keyspace, _Table, json));
+            }
+        }
+
+        public IEnumerable<T> GetSignals(DateTime from, DateTime to)
+        {
+            IEnumerable<string> data = this.GetSignalsSerialized(from, to);
+            return data.Select(x => _Serializer.Deserialize(x));
+        }
+
+        public IEnumerable<string> GetSignalsSerialized(DateTime from, DateTime to)
+        {
+            List<string> result = new List<string>();
+            string query = $"{String.Format(SELECT_JSON_QUERY, _Keyspace, _Table)}"; // token({_DateColumnName}) > token('{from.ToString(dateFormat)}') and    where token({_DateColumnName}) < token('{to.ToString(dateFormat)}')
+            RowSet set = _Session.Execute(query);
+
+            foreach (var r in set)
+                result.Add(r[0].ToString());
+
+            return result;
+        }
+    }
+}*/

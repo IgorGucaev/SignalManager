@@ -1,0 +1,53 @@
+﻿/*using Cassandra;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EventsStore.Core.Helpers
+{
+    public class CassandraHelper
+    {
+        static public bool IsExist(string clusterAddress, string keyspace = "", string table = "")
+        {
+            Cluster cluster = null;
+
+            try
+            {
+                cluster = Cluster.Builder().AddContactPoint(clusterAddress).Build();
+            }
+            catch (Exception ex)
+            {
+                if (!String.IsNullOrWhiteSpace(keyspace) || !String.IsNullOrWhiteSpace(table))
+                    throw ex;
+                else return false;
+            }
+
+            ISession session = cluster.Connect();
+
+            if (session == null)
+                return false;
+
+            if (String.IsNullOrWhiteSpace(keyspace))
+                return false;
+
+            try
+            {
+                session.ChangeKeyspace(keyspace);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+
+
+            // Cassandra 2.x: "select columnfamily_name from schema_columnfamilies where keyspace_name = '{table}'"
+            // Cassandra 3.x upd: "select table_name from system_schema.tables where keyspace_name = 'myKeyspaceName'"
+            RowSet table_check = session.Execute($"select * from system.schema_tables where keyspace_name = '{table}'");
+
+            return false;
+        }
+    }
+}
+*/

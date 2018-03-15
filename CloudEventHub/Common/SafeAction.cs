@@ -2,14 +2,11 @@ namespace EventsGateway.Common
 {
     using System;
 
-    //--//
-
     public class SafeAction<TParam>
     {
         private readonly Action<TParam> _action;
         private readonly ILogger _logger;
 
-        //--//
 
         public SafeAction(Action<TParam> action, ILogger logger)
         {
@@ -35,8 +32,6 @@ namespace EventsGateway.Common
     {
         private readonly Action _action;
         private readonly ILogger _logger;
-
-        //--//
 
         public SafeAction(Action action, ILogger logger)
         {

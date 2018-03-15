@@ -4,6 +4,7 @@ namespace EventsGateway.Gateway
     using System.Runtime.Serialization;
     using Newtonsoft.Json;
     using EventsGateway.Common;
+    using Newtonsoft.Json.Converters;
 
     //--//
 
@@ -48,7 +49,7 @@ namespace EventsGateway.Gateway
             try
             {
                 result =
-                    JsonConvert.DeserializeObject<SensorDataContract>( data );
+                    JsonConvert.DeserializeObject<SensorDataContract>( data, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" } );
             }
             catch( Exception ex )
             {

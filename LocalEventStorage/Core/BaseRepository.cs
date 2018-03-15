@@ -1,11 +1,8 @@
 ﻿using EventsManager.LocalEventStorage.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace EventsManager.LocalEventStorage.Core
 {
@@ -18,7 +15,12 @@ namespace EventsManager.LocalEventStorage.Core
         public DbSet<TEntity> DbSet { get; protected set; }
 
         public virtual IQueryable<TEntity> QueryAll
-        { get { return this.DbSet.AsNoTracking(); } }
+        {
+            get
+            {
+                return this.DbSet.AsNoTracking();
+            }
+        }
 
         public BaseRepository(TDbContext dbContext)
         {
@@ -31,9 +33,13 @@ namespace EventsManager.LocalEventStorage.Core
             this.DbSet = this.DbContext.Set<TEntity>();
         }
 
-        public virtual IEnumerable<TEntity> Add(IEnumerable<TEntity> entities)
+        public void Add(IEnumerable<TEntity> entities)
         {
-            throw new NotImplementedException();
+            if (entities == null || !entities.Any())
+                return;
+
+            this.DbSet.AddRange(entities);
+            this.SaveChanges();
         }
 
         public TEntity Add(TEntity entity)
@@ -41,26 +47,14 @@ namespace EventsManager.LocalEventStorage.Core
             if (entity == null)
                 throw new ArgumentNullException("Entity", "Can't add null Entity to DbContext");
 
-            this.DbSet.Add(entity);
+            this.DbContext.ChangeTracker.AutoDetectChangesEnabled = false;
 
-            if (this.IsAutoSave)
-                this.SaveChanges();
+            this.DbSet.Add(entity);
+            this.SaveChanges();
+
+            this.DbContext.Entry(entity).State = EntityState.Detached;
 
             return entity;
-        }
-
-        public virtual bool Delete(TEntity entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException("Entity", "Can't delete null Entity to DbContext");
-
-            this.DbSet.Attach(entity);
-            this.DbSet.Remove(entity);
-
-            if (this.IsAutoSave)
-                this.SaveChanges();
-
-            return true;
         }
 
         public IEnumerable<TEntity> GetAll()
@@ -75,22 +69,56 @@ namespace EventsManager.LocalEventStorage.Core
 
         public bool Truncate()
         {
-            var model = this.DbContext.Model;
+            IEnumerable<TEntity> entities = this.QueryAll.ToList();
 
-            // Get all the entity types information contained in the DbContext class, ...
-            var entityTypes = model.GetEntityTypes();
+            var tracked = this.DbContext.ChangeTracker.Entries<TEntity>().ToList();
+            foreach (var tr in tracked)
+                tr.State = EntityState.Detached;
 
-            // ... and get one by entity type information of "FooBars" DbSet property.
-            var entityType = entityTypes.First(t => t.ClrType == typeof(TEntity));
+            foreach (var entity in entities)
+                this.DbSet.Remove(entity);
 
-            // The entity type information has the actual table name as an annotation!
-            var tableNameAnnotation = entityType.GetAnnotation("Relational:TableName");
-            var tableNameOfEntitySet = tableNameAnnotation.Value.ToString();
-
-            this.DbContext.Database.ExecuteSqlCommand($"delete from {tableNameOfEntitySet};");
-            //  this.DbSet.Remove(entity);
+            this.DbContext.SaveChanges();
+            this.DbContext.Database.ExecuteSqlCommand("VACUUM"); // Shrink database file. Another way is to set auto vacuum flag on database
 
             return true;
+        }
+
+        public virtual bool Delete(TEntity entity)
+        {
+            if (entity == null)
+                throw new ArgumentNullException("Entity", "Can't delete null Entity to DbContext");
+
+            this.DbSet.Attach(entity);
+            this.DbSet.Remove(entity);
+            this.SaveChanges();
+
+            return true;
+        }
+
+        public bool Delete(IEnumerable<TEntity> entities)
+        {
+            if (entities == null || !entities.Any())
+                return true;
+
+            var tracked = this.DbContext.ChangeTracker.Entries<TEntity>().ToList();
+
+            foreach (var tr in tracked)
+                if (entities.Any(x=>x.GetHashCode() == tr.Entity.GetHashCode()))
+                {
+                    tr.State = EntityState.Detached;
+                }
+
+            this.DbSet.RemoveRange(entities);
+
+            this.SaveChanges();
+
+            return true;
+        }
+
+        public int Count()
+        {
+            return this.QueryAll.Count();
         }
     }
 }

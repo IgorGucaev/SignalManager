@@ -24,6 +24,8 @@
 
   <ItemGroup>
     <PackageReference Include="CassandraCSharpDriver" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.1" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
     <PackageReference Include="xunit" Version="2.3.1" />
@@ -32,6 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\EventManager\Abstractions\EventsManager.Abstractions.csproj" />
+    <ProjectReference Include="..\..\EventManager\Core\EventsManager.Core.csproj" />
     <ProjectReference Include="..\Abstractions\EventsManager.LocalEventStorage.Abstractions.csproj" />
     <ProjectReference Include="..\Core\EventsManager.LocalEventStorage.Core.csproj" />
   </ItemGroup>

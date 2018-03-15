@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <StartupObject>EventBroker.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CloudEventHub\Common\EventsManager.CloudEventHub.Common.csproj" />
+    <ProjectReference Include="..\CloudEventHub\EventsManager.CloudEventHub.Core\EventsManager.CloudEventHub.Core.csproj" />
+    <ProjectReference Include="..\EventManager\Abstractions\EventsManager.Abstractions.csproj" />
+    <ProjectReference Include="..\EventManager\Core\EventsManager.Core.csproj" />
+    <ProjectReference Include="..\LocalEventStorage\Core\EventsManager.LocalEventStorage.Core.csproj" />
+  </ItemGroup>
+
+</Project>

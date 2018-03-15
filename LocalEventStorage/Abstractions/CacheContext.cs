@@ -15,10 +15,5 @@ namespace EventsManager.LocalEventStorage.Abstractions
             optionsBuilder.UseSqlite("Data Source=cache.db");
 
         }
-
-        public void Truncate(string tableName)
-        {
-            this.Database.ExecuteSqlCommand($"Truncate Table [{tableName}]");
-        }
     }
 }

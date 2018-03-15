@@ -4,9 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace EventsManager.LocalEventStorage.Test
@@ -24,7 +22,7 @@ namespace EventsManager.LocalEventStorage.Test
 
             // Perform
             int countBefore = db.Signals.Count();
-            db.Signals.Add(new Abstractions.Signal() { Data = serializedSignal, Timestamp = timestamp });
+            db.Signals.Add(Signal.New(deviceId: "fooDevice", data: serializedSignal, timestamp: timestamp));
             db.SaveChanges();
             db.Dispose();
 
@@ -43,131 +41,81 @@ namespace EventsManager.LocalEventStorage.Test
         {
             // Prepare
             SignalRepository signalRepo = new SignalRepository(new CacheContext());
-            var signals =  signalRepo.GetAll();
+
+            int count = signalRepo.QueryAll.Count();
+            if (count == 0)
+                signalRepo.Add(Signal.New(deviceId: "fooDevice", data: "foo", timestamp: DateTime.Now));
+
+            // Pre-validate
+            Assert.NotEmpty(signalRepo.QueryAll);
+
+            // Perform
             signalRepo.Truncate();
-            //int count = db.Signals.Count();
-            //if (count == 0)
-            //{
-            //    db.Signals.Add(new Abstractions.Signal() { Data = "foo", Timestamp = DateTime.Now });
-            //    db.SaveChanges();
-            //}
 
-            //// Pre-validate
-            //Assert.NotEmpty(db.Signals);
-
-            //// Perform
-            //db.Truncate(db.Signals);
-            //db.Dispose();
-
-            //// Post-validate
-            //List<object[]> afterTruncateData = adapter.Select();
-            //Assert.Empty(afterTruncateData);
+            // Post-validate
+            Assert.Empty(signalRepo.QueryAll);
             //adapter.Disconnect();
         }
 
-        //[Fact]
-        //public void SQLite__Insert_Rows__InSingleTransaction_Stress()
-        //{
-        //    // Prepare
-        //    SQLiteCacheSettings settings = new SQLiteCacheSettings("fooDatabase", "barTable").AddDefaultQueries();
-        //    SQLiteCacheAdapter adapter = new SQLiteCacheAdapter(settings);
-        //    bool connected = adapter.Connect();
-        //    CancellationTokenSource tokenSource = new CancellationTokenSource();
-        //    int testSize = 100000;
+        [Fact]
+        public void SQLite__Insert_Rows__InSingleTransaction_Stress()
+        {
+            // Prepare
+            SignalRepository signalRepo = new SignalRepository(new CacheContext());
+            int countBefore = signalRepo.QueryAll.Count();
+         
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            int testSize = 100000;
 
-        //    // Pre-validate
-        //    Assert.True(connected);
-        //    adapter.Truncate();
-        //    Assert.Empty(adapter.Select());
+            // Pre-validate
 
-        //    // Perform
-        //    object[] dummyRow = new object[] { Guid.NewGuid().ToString(), DateTime.Now };
-        //    List<object[]> rows = new List<object[]>();
-        //    for (int i = 0; i < testSize; i++)
-        //        rows.Add(dummyRow);
+            // Perform
+            List<Signal> signals = new List<Signal>();
+            List<object[]> rows = new List<object[]>();
+            for (int i = 0; i < testSize; i++)
+                signals.Add(Signal.New(deviceId: "fooDevice", data: Guid.NewGuid().ToString(), timestamp: DateTime.Now));
 
-        //    Stopwatch sw = new Stopwatch();
-        //    sw.Start();
-        //    adapter.Insert(rows);
-        //    sw.Stop();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            signalRepo.Add(signals);
+            sw.Stop();
 
 
-        //    // Post-validate
-        //    Assert.Equal(testSize, adapter.Select().Count());
-        //    double averageInsertSpeed = testSize / sw.Elapsed.TotalSeconds;
-        //    adapter.Disconnect();
-        //    Assert.True(averageInsertSpeed > 10000);
-        //}
+            // Post-validate
+            int countAfter = signalRepo.QueryAll.Count();
+            Assert.Equal(countBefore + testSize, countAfter); // signal inserted correctly
+            double averageInsertSpeed = testSize / sw.Elapsed.TotalSeconds;
+            Assert.True(averageInsertSpeed > 5000);
+        }
 
-        //[Fact]
-        //public void SQLite__Insert_Rows__Stress()
-        //{
-        //    // Prepare
-        //    SQLiteCacheSettings settings = new SQLiteCacheSettings("fooDatabase", "barTable").AddDefaultQueries();
-        //    SQLiteCacheAdapter adapter = new SQLiteCacheAdapter(settings);
-        //    bool connected = adapter.Connect();
-        //    int insertions = 0;
-        //    int testCount = 150000;
+        [Fact]
+        public void SQLite_Delete_Rows_Created_Before_Date()
+        {
+            // Prepare
+            SignalRepository signalRepo = new SignalRepository(new CacheContext());
+            int count = signalRepo.QueryAll.Count();
 
-        //    // Pre-validate
-        //    Assert.True(connected);
-        //    adapter.Truncate();
-        //    Assert.Empty(adapter.Select());
+            // Pre-validate
+            signalRepo.Truncate();
+            Assert.Empty(signalRepo.QueryAll);
+            DateTime border = DateTime.Now.AddMinutes(-1);
+            string topGuid = Guid.NewGuid().ToString();
+            signalRepo.Add(new Signal[] {
+                Signal.New(deviceId: "fooDevice", data: Guid.NewGuid().ToString(), timestamp: DateTime.Now.AddMinutes(-3)),
+                Signal.New(deviceId: "fooDevice", data: Guid.NewGuid().ToString(), timestamp: DateTime.Now.AddMinutes(-2)),
+                Signal.New(deviceId: "fooDevice", data: topGuid, timestamp: border)
+            });
+            
+            Assert.Equal(3, signalRepo.QueryAll.Count());
 
-        //    // Perform
-        //    AutoResetEvent arEvent = new AutoResetEvent(false);
-        //    object[] dummyRow = new object[] { Guid.NewGuid().ToString(), DateTime.Now };
+            // Perform
+            List<Signal> toDelete = signalRepo.QueryAll.Where(x => x.Timestamp < border).ToList();
+            signalRepo.Delete(toDelete); // Truncate();
 
-        //    Task t = Task.Factory.StartNew(() =>
-        //    {
-        //        while (insertions < testCount)
-        //        {
-        //            adapter.InsertAsync(dummyRow);
-        //            insertions++;
-        //        }
+            // Post-validate
 
-        //        arEvent.Set();
-        //    });
-        //    arEvent.WaitOne();
-        //    Thread.Sleep(100); // Wait for async save because the insert function is asynchronous
-
-        //    // Post-validate
-        //    int afterInsertRowCount = adapter.Select().Count();
-        //    Assert.Equal(testCount, afterInsertRowCount); adapter.Disconnect();
-
-        //    adapter.Disconnect();
-        // }
-
-        //[Fact]
-        //public void SQLite_Delete_Rows_Created_Before_Date()
-        //{
-        //    // Prepare
-        //    SQLiteCacheSettings settings = new SQLiteCacheSettings("fooDatabase", "barTable").AddDefaultQueries();
-        //    SQLiteCacheAdapter adapter = new SQLiteCacheAdapter(settings);
-        //    bool connected = adapter.Connect();
-
-        //    // Pre-validate
-        //    Assert.True(connected);
-        //    adapter.Truncate();
-        //    Assert.Empty(adapter.Select());
-        //    DateTime border = DateTime.Now.AddMinutes(-1);
-        //    string topGuid = Guid.NewGuid().ToString();
-        //    adapter.Insert(new List<object[]> {
-        //        new object[] { Guid.NewGuid().ToString(), DateTime.Now.AddMinutes(-3) },
-        //        new object[] { Guid.NewGuid().ToString(), DateTime.Now.AddMinutes(-2) },
-        //        new object[] { topGuid, border }
-        //    });
-        //    Assert.Equal(3, adapter.Select().Count);
-
-        //    // Perform
-        //    adapter.Delete(border);
-
-        //    // Post-validate
-        //    List<object[]> data = adapter.Select();
-        //    int afterInsertRowCount = data.Count();
-        //    Assert.Equal(1, afterInsertRowCount);
-        //    Assert.Equal(topGuid, data.First()[1]);
-        //    adapter.Disconnect();
-        //}
+            Assert.Equal(1, signalRepo.QueryAll.Count());
+            Assert.Equal(topGuid, signalRepo.QueryAll.First().Data);
+        }
     }
 }

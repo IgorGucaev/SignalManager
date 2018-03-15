@@ -12,12 +12,15 @@ namespace EventsManager.LocalEventStorage.Abstractions
     {
         IEnumerable<T> GetAll();
 
-        IEnumerable<T> Add(IEnumerable<T> entities);
+        void Add(IEnumerable<T> entities);
 
         T Add(T entity);
 
         bool Truncate();
 
         bool Delete(T entity);
+        bool Delete(IEnumerable<T> entities);
+
+        int Count();
     }
 }

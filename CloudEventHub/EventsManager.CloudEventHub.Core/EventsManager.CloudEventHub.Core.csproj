@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\EventsManager.CloudEventHub.Common.csproj" />
+    <ProjectReference Include="..\EventsManager.CloudEventHub.Abstractions\EventsManager.CloudEventHub.Abstractions.csproj" />
+    <ProjectReference Include="..\Gateway\EventsManager.CloudEventHub.Gateway.csproj" />
+  </ItemGroup>
+
+</Project>

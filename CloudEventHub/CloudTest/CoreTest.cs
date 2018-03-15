@@ -130,7 +130,7 @@ namespace EventsGateway.Test
                         StringBuilder sb = new StringBuilder();
                         sb.Append("{\"unitofmeasure\":\"%\",\"location\":\"Olivier's office\",\"measurename\":\"Humidity\",");
                         sb.Append("\"timecreated\":\"");
-                        sb.Append(DateTime.UtcNow.ToString()); // this should look like "2015-02-25T23:07:47.159Z"
+                        sb.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")); // this should look like "2015-02-25T23:07:47.159Z"
                         sb.Append("\",\"organization\":\"MSOpenTech\",\"guid\":\"");
                         sb.Append(new Guid().ToString());
                         sb.Append("\",\"value\":");

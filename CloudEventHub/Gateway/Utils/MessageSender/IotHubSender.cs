@@ -9,8 +9,8 @@ namespace EventsGateway.Gateway
     using Microsoft.Azure.Devices.Client;
 
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Client.Exceptions;
     using AzureDevices = Microsoft.Azure.Devices;
+    using EventsManager.CloudEventHub.Gateway.Utils.MessageSender;
 
     //--//
 
@@ -25,8 +25,6 @@ namespace EventsGateway.Gateway
         //--//
 
         private readonly string _defaultSubject;
-        private readonly string _defaultDeviceId;
-        private readonly string _defaultDeviceDisplayName;
 
         public ILogger Logger
         {
@@ -34,7 +32,8 @@ namespace EventsGateway.Gateway
             set;
         }
 
-        public IotHubSender(string gatewayIotHubConnectionString, ILogger logger)
+        public IotHubSender(IotHubSenderSettings senderSettings, ILogger logger)
+            //string gatewayIotHubConnectionString, ILogger logger)
         {
             Logger = SafeLogger.FromLogger(logger);
 
@@ -42,35 +41,35 @@ namespace EventsGateway.Gateway
             Logger.LogInfo( "Connecting to IotHub" );
 #endif
 
-            AzureDevices.RegistryManager registryManager = AzureDevices.RegistryManager.CreateFromConnectionString(gatewayIotHubConnectionString);
-            AddDeviceAsync(registryManager).Wait();
+           // AzureDevices.RegistryManager registryManager = AzureDevices.RegistryManager.CreateFromConnectionString(senderSettings.IotHubConnectionString);
+           // AddDeviceAsync(registryManager).Wait();
 
             deviceClient = DeviceClient.CreateFromConnectionString("HostName=technobee-infrastructure-testbed-01-iot-hub.azure-devices.net;DeviceId=myDevice;SharedAccessKey=kZTuwNbRvnmW5nz6XBvORD3GDo+K5bZdWCKlQBXACjA=");
             // Create(gatewayIotHubConnectionString, new DeviceAuthenticationWithRegistrySymmetricKey(DeviceName, deviceKey));
             deviceClient.OpenAsync();
         }
 
-        private async Task AddDeviceAsync(AzureDevices.RegistryManager registryManager)
-        {
-            AzureDevices.Device device;
-            try
-            {
-                device = await registryManager.AddDeviceAsync(new AzureDevices.Device(DeviceName));
-            }
-            catch (Exception ex)
-            {
-                if (ex is Microsoft.Azure.Devices.Client.Exceptions.DeviceAlreadyExistsException 
-                    || ex is Microsoft.Azure.Devices.Common.Exceptions.DeviceAlreadyExistsException)
-                {
-                    device = await registryManager.GetDeviceAsync(DeviceName);
+        //private async Task AddDeviceAsync(AzureDevices.RegistryManager registryManager)
+        //{
+        //    AzureDevices.Device device;
+        //    try
+        //    {
+        //        device = await registryManager.AddDeviceAsync(new AzureDevices.Device(DeviceName));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        if (ex is Microsoft.Azure.Devices.Client.Exceptions.DeviceAlreadyExistsException 
+        //            || ex is Microsoft.Azure.Devices.Common.Exceptions.DeviceAlreadyExistsException)
+        //        {
+        //            device = await registryManager.GetDeviceAsync(DeviceName);
                     
-                }
-                else
-                    throw;
-            }
+        //        }
+        //        else
+        //            throw;
+        //    }
 
-            deviceKey = device.Authentication.SymmetricKey.PrimaryKey;
-        }
+        //    deviceKey = device.Authentication.SymmetricKey.PrimaryKey;
+        //}
 
         public TaskWrapper SendMessage(T data)
         {
@@ -130,18 +129,10 @@ namespace EventsGateway.Gateway
             return TaskWrapper.Run(() => sh.SafeInvoke(msg));
         }
 
-        protected Message PrepareMessage(string serializedData, string subject = default(string), string deviceId = default(string), string deviceDisplayName = default(string))
+        protected Message PrepareMessage(string serializedData, string subject = default(string))
         {
             if (subject == default(string))
                 subject = _defaultSubject;
-
-            if (deviceId == default(string))
-                deviceId = _defaultDeviceId;
-
-            if (deviceDisplayName == default(string))
-                deviceDisplayName = _defaultDeviceDisplayName;
-
-            var creationTime = DateTime.UtcNow;
 
             Message message = null;
 
@@ -149,7 +140,7 @@ namespace EventsGateway.Gateway
             {
                 message = new Message(Encoding.UTF8.GetBytes(serializedData));
                 message.Properties.Add("Subject", subject);
-                message.Properties.Add("CreationTime", JsonConvert.SerializeObject(creationTime));
+                message.Properties.Add("CreationTime", JsonConvert.SerializeObject(DateTime.UtcNow));
             }
 
             return message;

@@ -1,203 +1,22 @@
 ﻿namespace EventsGateway.Common.Threading
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
     using System.Threading;
-    //--//
+
     using _THREADING = System.Threading.Tasks;
 
-    //--//
-
-#if USE_TASKS
-    public class TaskWrapper
-    {
-        private _THREADING.Task _t;
-
-        //--//
-
-        public static TaskWrapper Run( Action action )
-        {
-            var t = new TaskWrapper( action );
-
-            t.Start();
-
-            return t;
-        }
-
-        public static void WaitAll( params TaskWrapper[] tasks )
-        {
-            _THREADING.Task[] ts = new _THREADING.Task[ tasks.Length ];
-            
-            for( int i = 0; i < tasks.Length; ++i )
-            {
-                ts[ i ] = tasks[ i ].InnerTask;
-            }
-
-            _THREADING.Task.WaitAll( ts );
-        }
-
-        public static void BatchWaitAll( params TaskWrapper[] tasks )
-        {
-            // we can wait on 64 handles at the most            
-            const int maxHandles = 64;
-
-            int remainder = tasks.Length % maxHandles;
-            int loops     = tasks.Length / maxHandles;
-
-            _THREADING.Task[] wh = null;
-            if( tasks.Length > maxHandles )
-            {
-
-                wh = new _THREADING.Task[ maxHandles ];
-
-                for( int i = 0; i < loops; ++i )
-                {
-                    for( int j = 0; j < maxHandles; ++j )
-                    {
-                        wh[ j ] = tasks[ ( i * maxHandles ) + j ].InnerTask;
-                    }
-
-                    _THREADING.Task.WaitAll( wh, Timeout.Infinite );
-                }
-            }
-
-            if( remainder > 0 )
-            {
-                wh = new _THREADING.Task[ remainder ];
-
-                for( int j = 0; j < remainder; ++j )
-                {
-                    wh[ j ] = tasks[ ( loops * maxHandles ) + j ].InnerTask;
-                }
-
-                _THREADING.Task.WaitAll( wh, Timeout.Infinite );
-            }
-        }
-
-        //--//
-
-        protected TaskWrapper( )
-        {
-        }
-
-        protected TaskWrapper( Action action )
-        {
-            _t = new _THREADING.Task( action );
-        }
-
-        protected TaskWrapper( _THREADING.Task t )
-        {
-            Debug.Assert( t != null );
-            _t = t;
-        }
-
-        public void Start()
-        {
-            _t.Start( );
-        }
-
-        public void Wait()
-        {
-            _t.Wait( );
-        }
-
-        public int Id
-        {
-            get
-            {
-                return _t.Id;
-            }
-        }
-
-        public _THREADING.TaskStatus Status
-        {
-            get
-            {
-                return (_THREADING.TaskStatus)_t.Status;
-            }
-        }
-
-        protected _THREADING.Task InnerTask
-        {
-            get
-            {
-                return _t;
-            }
-            set
-            {
-                _t = value;
-            }
-        }
-    }
-
-    public class TaskWrapper<TResult> : TaskWrapper
-    {
-        private readonly _THREADING.Task<TResult> _t;
-
-        //--//
-
-        public static TaskWrapper<TResult> Run( Func<TResult> function )
-        {
-            var t = new TaskWrapper<TResult>( function );
-
-            t.Start();
-
-            return t;
-        }
-
-        //--//
-
-        private static Action MakeDefault<T>( Func<T> function )
-        {
-            return () => { function(); };
-        }
-
-        public TaskWrapper( Func<TResult> function )
-            : base( )
-        {
-            _t = new _THREADING.Task<TResult>( function );
-
-            InnerTask = _t;
-        }
-
-        private TaskWrapper( _THREADING.Task<TResult> t )
-            : base ( t )
-        {
-        }
-            
-        public TaskWrapper<TNewResult> ContinueWith<TNewResult>( Func<_THREADING.Task<TResult>, TNewResult> continuationFunction )
-        {
-            return new TaskWrapper<TNewResult>( _t.ContinueWith<TNewResult>( continuationFunction ) );
-        }
-
-        public TResult Result
-        {
-            get
-            {
-                return _t.Result;
-            }
-        }
-    }
-#else
 
     public class TaskWrapper
     {
         private static int _unique_id = 0;
-
-        //--//
+        
 
         private readonly int _id;
         private _THREADING.TaskStatus _status;
         private ManualResetEvent _completed;
 
-        //--//
 
         protected readonly Action _action;
-
-        //--//
 
         public static TaskWrapper Run(Action action)
         {
@@ -245,8 +64,6 @@
                 AutoResetEvent.WaitAll(wh, Timeout.Infinite);
             }
         }
-
-        //--//
 
         protected TaskWrapper()
         {
@@ -336,8 +153,6 @@
         private TResult _result = default(TResult);
         private readonly object _syncRoot = new object();
 
-        //--//
-
         public static TaskWrapper<TResult> Run(Func<TResult> function)
         {
             var t = new TaskWrapper<TResult>(function);
@@ -346,8 +161,6 @@
 
             return t;
         }
-
-        //--//
 
         private TaskWrapper(Func<TResult> func)
             : base()
@@ -452,5 +265,4 @@
             }
         }
     }
-#endif
 }

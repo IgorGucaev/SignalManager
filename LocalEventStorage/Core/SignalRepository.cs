@@ -6,10 +6,9 @@ using System.Text;
 
 namespace EventsManager.LocalEventStorage.Core
 {
-    public class SignalRepository : BaseRepository<CacheContext, Signal>
+    public class SignalRepository : BaseRepository<CacheContext, Signal>, ISignalRepository
     {
         public SignalRepository(CacheContext dbContext) : base(dbContext)
-        {
-        }
+        { }
     }
 }

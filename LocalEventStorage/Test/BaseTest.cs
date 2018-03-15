@@ -17,7 +17,7 @@ namespace EventsManager.LocalEventStorage.Test
             this._Provider = new ServiceCollection()
                 .AddTransient<IUnitOfWork, BaseUnitOfWork>()
                 .AddTransient<ISignalService, SignalService>()
-                .AddTransient<IEventManager, EventsManager.Core.EventManager>().BuildServiceProvider();
+                .BuildServiceProvider();
         }
 
         public T GetService<T>()

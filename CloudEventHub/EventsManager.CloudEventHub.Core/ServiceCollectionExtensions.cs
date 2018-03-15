@@ -1,14 +1,13 @@
 ﻿using EventsManager.CloudEventHub.Abstractions;
-using EventsManager.CloudEventHub.Core;
 using EventsManager.CloudEventHub.Gateway.Utils.MessageSender;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using EventsManager.CloudEventHub.Common;
+using EventsManager.CloudEventHub.Core;
 
-namespace EventBroker
+namespace EventManager.CloudEventHub.Core
 {
-
-    public static class ServiceCollectionEctensions
+    public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddCloudAdapter(this IServiceCollection serviceCollection, Action<IotHubSenderSettings> setupAction = null)
         {

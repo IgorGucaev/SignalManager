@@ -5,15 +5,15 @@ namespace EventsGateway.Gateway
     using EventsGateway.Common;
     using EventsGateway.Common.Threading;
 
-    //--//
-
+    /// <summary>
+    /// Device to hub signal queue
+    /// </summary>
+    /// <typeparam name="T">QueuedItem</typeparam>
     public class GatewayQueue<T> : IAsyncQueue<T>
     {
         private readonly ConcurrentQueue<T> _Queue = new ConcurrentQueue<T>( );
 
-        //--//
-
-        async public void Push( T item )
+        async public void Push(T item )
         {
             _Queue.Enqueue( item );
         }
@@ -36,7 +36,7 @@ namespace EventsGateway.Gateway
 
             var sf = new SafeFunc<OperationStatus<T>>( deque, null );
 
-            return TaskWrapper<OperationStatus<T>>.Run( () => sf.SafeInvoke() );
+            return TaskWrapper<OperationStatus<T>>.Run(() => sf.SafeInvoke());
         }
 
         public int Count

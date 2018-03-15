@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace EventsManager.LocalEventStorage.Abstractions
 {
-    public interface ISignalService
+    public interface ISignalService : IDisposable
     {
         void Add(IEnumerable<Signal> signals);
 

@@ -9,33 +9,29 @@ using System.Threading;
 
 namespace EventsManager.CloudEventHub.Core
 {
-    public class CloudAdapter : ICloudAdapter, IDisposable
+    public class CloudAdapter : ICloudAdapter
     {
         private const int STOP_TIMEOUT_MS = 5000; // ms
 
         private readonly ILogger _logger;
-        private readonly AutoResetEvent _completed;
         private readonly GatewayQueue<QueuedItem> _gatewayQueue;
-        private readonly IMessageSender<SensorDataContract> _sender;
-        private readonly BatchSenderThread<QueuedItem, SensorDataContract> _batchSenderThread;
-        private readonly Func<string, QueuedItem> _gatewayTransform;
+        private readonly IMessageSender<QueuedItem> _sender;
+        private readonly BatchSenderThread<QueuedItem> _batchSenderThread;
+        private readonly Func<string, string, QueuedItem> _gatewayTransform;
         private GatewayService service;
          
         public CloudAdapter(IotHubSenderSettings settings)
         {
             _gatewayQueue = new GatewayQueue<QueuedItem>();
-            _sender = new IotHubSender<SensorDataContract>(settings, _logger); // new RabbitMQSender<SensorDataContract>(_logger/*, "address"*/); // MockSender
-            _batchSenderThread = new BatchSenderThread<QueuedItem, SensorDataContract>(
+            _sender = new IotHubSender<QueuedItem>(settings, _logger);
+            
+            _batchSenderThread = new BatchSenderThread<QueuedItem>(
                 _gatewayQueue,
                 _sender,
-                dataTransform: null,
                 serializedData: m => (m == null) ? null : m.JsonData,
-                logger: _logger
-                );
+                logger: _logger);
 
-            Func<string, SensorDataContract> transform = (m => DataTransforms.SensorDataContractFromString(m, _logger));
-
-            _gatewayTransform = (m => DataTransforms.QueuedItemFromSensorDataContract(transform(m)));
+            _gatewayTransform = ((deviceId, json) => new QueuedItem(deviceId, json));
 
             service = PrepareGatewayService();
         }
@@ -60,7 +56,7 @@ namespace EventsManager.CloudEventHub.Core
 
         protected virtual void DataInQueue(QueuedItem data)
         {
-            // LORENZO: test behaviours such as accumulating data an processing in batch
+            // test behaviours such as accumulating data an processing in batch
             // as it stands, we are processing every event as it comes in
 
             _batchSenderThread.Process();
@@ -68,7 +64,7 @@ namespace EventsManager.CloudEventHub.Core
 
         protected virtual void EventBatchProcessed(List<TaskWrapper> messages)
         {
-            // LORENZO: test behaviours such as waiting for messages to be delivered or re-transmission
+            // test behaviours such as waiting for messages to be delivered or re-transmission
 
             if (messages == null || messages.Count == 0)
             {
@@ -88,11 +84,11 @@ namespace EventsManager.CloudEventHub.Core
             }
         }
 
-        public void Enqueue(string jsonData)
+        public void Enqueue(string deviceId, string jsonData)
         {
             try
             {
-                service.Enqueue(jsonData);
+                service.Enqueue(deviceId, jsonData);
             }
             catch (Exception ex)
             {

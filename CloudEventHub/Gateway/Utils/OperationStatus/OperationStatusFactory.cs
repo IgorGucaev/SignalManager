@@ -2,13 +2,9 @@
 {
     using System;
 
-    //--//
-
     public static class OperationStatusFactory
     {
         private static readonly OperationStatus _successConst = new OperationStatus { OperationCode = ErrorCode.Success };
-
-        //--//
 
         public static OperationStatus CreateSuccess( )
         {

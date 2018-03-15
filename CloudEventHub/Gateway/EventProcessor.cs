@@ -4,13 +4,9 @@
     using EventsGateway.Common;
     using EventsGateway.Common.Threading;
 
-    //--//
-
     public abstract class EventProcessor
     {
         protected readonly ILogger _logger;
-
-        //--//
 
         protected EventProcessor(ILogger logger)
         {

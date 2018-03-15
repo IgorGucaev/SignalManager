@@ -6,19 +6,16 @@
     using System.Diagnostics;
     using EventsGateway.Common;
     using EventsGateway.Common.Threading;
+    using EventsManager.CloudEventHub.Gateway.Models;
 
-    //--//
-
-    public class BatchSenderThread<TQueueItem, TMessage> : EventProcessor
+    public class BatchSenderThread<TQueueItem> : EventProcessor
+        where TQueueItem: IQueuedItem
     {
         private static readonly string _logMessagePrefix = "BatchSenderThread error. ";
         private readonly object _syncRoot = new object();
 
-        //--//
-
         private readonly IAsyncQueue<TQueueItem> _dataSource;
-        private readonly IMessageSender<TMessage> _dataTarget;
-        private readonly Func<TQueueItem, TMessage> _dataTransform;
+        private readonly IMessageSender<TQueueItem> _dataTarget;
         private readonly Func<TQueueItem, string> _serializedData;
         private Thread _worker;
         private AutoResetEvent _operational;
@@ -26,10 +23,9 @@
         private bool _running;
         private int _outstandingTasks;
 
-        public BatchSenderThread(IAsyncQueue<TQueueItem> dataSource, IMessageSender<TMessage> dataTarget, Func<TQueueItem, TMessage> dataTransform, Func<TQueueItem, string> serializedData, ILogger logger)
+        public BatchSenderThread(IAsyncQueue<TQueueItem> dataSource, IMessageSender<TQueueItem> dataTarget, Func<TQueueItem, string> serializedData, ILogger logger)
             : base(SafeLogger.FromLogger(logger))
         {
-
             if (dataSource == null || dataTarget == null)
             {
                 throw new ArgumentException("data source and data target cannot be null");
@@ -40,7 +36,6 @@
             _running = false;
             _dataSource = dataSource;
             _dataTarget = dataTarget;
-            _dataTransform = dataTransform;
             _serializedData = serializedData;
             _outstandingTasks = 0;
         }
@@ -117,7 +112,7 @@
 
             try
             {
-                const int WAIT_TIMEOUT = 50; // millisecods
+                const int WAIT_TIMEOUT = 50; // milliseconds
 
                 // run until Stop() is called
                 while (_running == true)
@@ -195,14 +190,7 @@
 
                                 if (popped?.Result != null && popped.Result.IsSuccess)
                                 {
-                                    if (_dataTransform != null)
-                                    {
-                                        return _dataTarget.SendMessage(_dataTransform(popped.Result.Result));
-                                    }
-                                    if (_serializedData != null)
-                                    {
-                                        return _dataTarget.SendSerialized(_serializedData(popped.Result.Result));
-                                    }
+                                    return _dataTarget.SendMessage(popped.Result.Result.GetDeviceId(), popped.Result.Result);
                                 }
 
                                 return null;
@@ -219,33 +207,24 @@
                             TaskWrapper.Run(() => sh.SafeInvoke(tasks));
                         }
                     }
-                    catch (StackOverflowException ex)
+                    catch (StackOverflowException ex) // do not hide stack overflow exceptions
                     {
                         Logger.LogError(_logMessagePrefix + ex.Message);
-
-                        // do not hide stack overflow exceptions
                         throw;
                     }
-                    catch (OutOfMemoryException ex)
+                    catch (OutOfMemoryException ex) // do not hide memory exceptions
                     {
                         Logger.LogError(_logMessagePrefix + ex.Message);
-
-                        // do not hide memory exceptions
                         throw;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) // catch all other exceptions
                     {
                         Logger.LogError(_logMessagePrefix + ex.Message);
-
-                        // catch all other exceptions
                     }
-
-                    // go and check for more events
                 }
             }
             finally
             {
-                // signal stop
                 _operational.Set();
             }
         }
@@ -256,28 +235,22 @@
             {
                 tasks.Add(t);
             }
-            catch (StackOverflowException /*ex*/)
+            catch (StackOverflowException)// do not hide stack overflow exceptions
             {
-                // do not hide stack overflow exceptions
                 throw;
             }
-            catch (OutOfMemoryException /*ex*/)
+            catch (OutOfMemoryException) // do not hide memory exceptions
             {
-                // do not hide memory exceptions
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) // catch all other exceptions
             {
                 Logger.LogError("Exception on adding task: " + ex.Message);
 
-                // catch all other exceptions
-
-                //
                 // TODO
                 // If we are here, the task that has been popped could not be added to the list
                 // of tasks that the client will be notifed about
                 // This does not mean that the task has not been processed though
-                //
             }
         }
     }

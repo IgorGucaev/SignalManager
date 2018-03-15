@@ -1,5 +1,7 @@
-﻿using EventsManager.Abstractions;
+﻿using EventsGateway.Common;
+using EventsManager.Abstractions;
 using EventsManager.CloudEventHub.Abstractions;
+using EventsManager.CloudEventHub.Gateway.Utils;
 using EventsManager.LocalEventStorage.Abstractions;
 using System;
 using System.Collections.Concurrent;
@@ -21,17 +23,24 @@ namespace EventsManager.Core
         private ISignalService _Service;
         private CancellationTokenSource _TokenSource = new CancellationTokenSource();
         private ICloudAdapter _CloudAdapter;
+        private ILogger _Logger;
 
-        public EventManager(ISignalService service, ICloudAdapter cloudAdapter)
+        public EventManager(ISignalService service, ICloudAdapter cloudAdapter, ILogger logger)
         {
             _Service = service;
             _CloudAdapter = cloudAdapter;
+            _Logger = logger;
+
+            if (!Helpers.CheckForInternetConnection())
+                throw new Exception("No internet connection!");
         }
 
         public void Start()
         {
             Task pushEventsToLocalStorageTask = Task.Factory.StartNew(() =>
             {
+                List<Signal> extract = new List<Signal>();
+
                 while (true)
                 {
                     if (_TokenSource.IsCancellationRequested)
@@ -45,17 +54,25 @@ namespace EventsManager.Core
 
                     movingToLocal = true;
 
-                    Thread.Sleep(20);
-
-                    List<Signal> extract = new List<Signal>();
                     Signal signal;
 
-                    while (_EventCache.TryTake(out signal))
-                        extract.Add(signal);
+                    try
+                    {
+                        Thread.Sleep(20);
 
-                    this._Service.Add(extract);
+                        extract.Clear();
+                        
 
-                    movingToLocal = false;
+                        while (_EventCache.TryTake(out signal))
+                            extract.Add(signal);
+
+                        _Service.Add(extract);
+                    }
+                    catch (Exception ex)
+                    {
+                        _Logger.LogError(ex.Message);
+                    }
+                    finally { movingToLocal = false; }
 
                     while (_EventCacheTemp.TryTake(out signal))
                         _EventCache.Add(signal);
@@ -81,14 +98,23 @@ namespace EventsManager.Core
 
                     movingToCloud = true;
 
-                    IEnumerable<Signal> events = this._Service.GetAll();
+                    try
+                    {
+                        IEnumerable<Signal> events = _Service.GetAll();
 
-                    foreach (var signal in events)
-                        _CloudAdapter.Enqueue(signal.Data);
+                        foreach (var signal in events)
+                            _CloudAdapter.Enqueue(signal.DeviceId, signal.Data);
 
-                    this._Service.Truncate();
-
-                    movingToCloud = false;
+                        _Service.Truncate();
+                    }
+                    catch (Exception ex)
+                    {
+                        _Logger.LogError(ex.Message);
+                    }
+                    finally
+                    {
+                        movingToCloud = false;
+                    }
                 }
             }, _TokenSource.Token);
         }
@@ -103,6 +129,12 @@ namespace EventsManager.Core
             if (movingToLocal)
                 _EventCacheTemp.Add(e);
             else _EventCache.Add(e);
+        }
+
+        public void Dispose()
+        {
+            _Service.Dispose();
+            _CloudAdapter.Dispose();
         }
     }
 }

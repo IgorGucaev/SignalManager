@@ -3,9 +3,9 @@ namespace EventsGateway.Gateway
     using System.ServiceModel;
 
     [ServiceContract(Namespace = "GatewayService")]
-    public interface IGatewayService : IService
+    public interface IGatewayService
     {
         [OperationContract]
-        int Enqueue(string jsonData);
+        int Enqueue(string deviceId, string jsonData);
     }
 }

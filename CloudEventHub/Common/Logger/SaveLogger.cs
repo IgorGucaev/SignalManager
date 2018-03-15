@@ -5,8 +5,6 @@ namespace EventsGateway.Common
     {
         protected readonly ILogger _logger;
 
-        //--//
-
         protected SafeLogger(ILogger logger)
         {
             _logger = logger;

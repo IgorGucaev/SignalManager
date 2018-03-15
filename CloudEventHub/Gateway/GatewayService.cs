@@ -15,11 +15,11 @@ namespace EventsGateway.Gateway
 
         private readonly IAsyncQueue<QueuedItem>    _queue;
         private readonly EventProcessor             _eventProcessor;
-        private readonly Func<string, QueuedItem>   _dataTransform;
+        private readonly Func<string, string, QueuedItem>   _dataTransform;
 
         //--//
 
-        public GatewayService( IAsyncQueue<QueuedItem> queue, EventProcessor processor, Func<string, QueuedItem> dataTransform = null )
+        public GatewayService(IAsyncQueue<QueuedItem> queue, EventProcessor processor, Func<string, string, QueuedItem> dataTransform = null )
         {
             if( queue == null || processor == null )
             {
@@ -32,10 +32,7 @@ namespace EventsGateway.Gateway
             }
             else
             {
-                _dataTransform = m => new QueuedItem
-                    {
-                        JsonData = m
-                    };
+                _dataTransform = (deviceId, json) => new QueuedItem(deviceId, json);
             }
 
             _queue = queue;
@@ -44,11 +41,11 @@ namespace EventsGateway.Gateway
 
         public ILogger Logger { get; set; }
 
-        public int Enqueue( string jsonData )
+        public int Enqueue(string deviceId, string jsonData)
         {
-            if( jsonData != null )//not filling a queue by empty items
+            if( jsonData != null ) //not filling a queue by empty items
             {
-                QueuedItem sensorData = _dataTransform( jsonData );
+                QueuedItem sensorData = _dataTransform(deviceId, jsonData);
 
                 if( sensorData != null )
                 {

@@ -2,8 +2,6 @@
 {
     using EventsGateway.Common.Threading;
 
-    //--//
-
     public interface IAsyncQueue<T>
     {
         void Push(T item);

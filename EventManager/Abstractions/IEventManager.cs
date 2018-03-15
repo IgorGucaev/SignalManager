@@ -3,7 +3,7 @@ using System;
 
 namespace EventsManager.Abstractions
 {
-    public interface IEventManager
+    public interface IEventManager : IDisposable
     {
         int IntervalMemToLocal { get; }
 

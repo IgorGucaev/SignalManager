@@ -2,8 +2,8 @@
 
 namespace EventsManager.CloudEventHub.Abstractions
 {
-    public interface ICloudAdapter
+    public interface ICloudAdapter : IDisposable
     {
-        void Enqueue(string jsonData);
+        void Enqueue(string deviceId, string jsonData);
     }
 }

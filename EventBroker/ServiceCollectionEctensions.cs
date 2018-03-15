@@ -3,8 +3,6 @@ using EventsManager.CloudEventHub.Core;
 using EventsManager.CloudEventHub.Gateway.Utils.MessageSender;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using EventsManager.CloudEventHub.Common;
 
 namespace EventBroker

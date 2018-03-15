@@ -5,11 +5,11 @@
 
     using _THREADING = System.Threading.Tasks;
 
+    /* Task wrappers. Do separate tasks in thread pool */
 
     public class TaskWrapper
     {
         private static int _unique_id = 0;
-        
 
         private readonly int _id;
         private _THREADING.TaskStatus _status;

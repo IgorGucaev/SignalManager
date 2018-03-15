@@ -11,18 +11,13 @@ namespace EventsGateway.Gateway
     using System.Threading.Tasks;
     using AzureDevices = Microsoft.Azure.Devices;
     using EventsManager.CloudEventHub.Gateway.Utils.MessageSender;
-
-    //--//
+    using System.Collections.Generic;
 
     public class IotHubSender<T> : IMessageSender<T> // Ex MessageSender
     {
-        protected const string DeviceName = "myDevice";
-        private string deviceKey;
-        private DeviceClient deviceClient;
+        private DeviceClientExtCollection deviceClients;
 
         private static readonly string _logMesagePrefix = "MessageSender error. ";
-
-        //--//
 
         private readonly string _defaultSubject;
 
@@ -41,12 +36,19 @@ namespace EventsGateway.Gateway
             Logger.LogInfo( "Connecting to IotHub" );
 #endif
 
-           // AzureDevices.RegistryManager registryManager = AzureDevices.RegistryManager.CreateFromConnectionString(senderSettings.IotHubConnectionString);
-           // AddDeviceAsync(registryManager).Wait();
+            /* AzureDevices.RegistryManager registryManager = AzureDevices.RegistryManager.CreateFromConnectionString(senderSettings.IotHubConnectionString);
+            AddDeviceAsync(registryManager).Wait(); */
 
-            deviceClient = DeviceClient.CreateFromConnectionString("HostName=technobee-infrastructure-testbed-01-iot-hub.azure-devices.net;DeviceId=myDevice;SharedAccessKey=kZTuwNbRvnmW5nz6XBvORD3GDo+K5bZdWCKlQBXACjA=");
-            // Create(gatewayIotHubConnectionString, new DeviceAuthenticationWithRegistrySymmetricKey(DeviceName, deviceKey));
-            deviceClient.OpenAsync();
+            deviceClients = new DeviceClientExtCollection();
+
+            foreach (DeviceBinding binding in senderSettings.Bindings)
+            {
+                var deviceClient = DeviceClient.CreateFromConnectionString(binding.GatewayHostName);
+                
+                deviceClient.OpenAsync();
+
+                deviceClients.Append(binding.DeviceId, deviceClient);
+            }
         }
 
         //private async Task AddDeviceAsync(AzureDevices.RegistryManager registryManager)
@@ -71,20 +73,18 @@ namespace EventsGateway.Gateway
         //    deviceKey = device.Authentication.SymmetricKey.PrimaryKey;
         //}
 
-        public TaskWrapper SendMessage(T data)
+        public TaskWrapper SendMessage(string deviceId, T data)
         {
             TaskWrapper result = null;
 
             try
             {
                 if (data == null)
-                {
                     return default(TaskWrapper);
-                }
 
                 string jsonData = JsonConvert.SerializeObject(data);
 
-                result = PrepareAndSend(jsonData);
+                result = PrepareAndSend(deviceId, jsonData);
             }
             catch (Exception ex)
             {
@@ -94,7 +94,7 @@ namespace EventsGateway.Gateway
             return result;
         }
 
-        public TaskWrapper SendSerialized(string jsonData)
+        public TaskWrapper SendSerialized(string deviceId, string jsonData)
         {
             TaskWrapper result = null;
 
@@ -105,7 +105,7 @@ namespace EventsGateway.Gateway
                     return default(TaskWrapper);
                 }
 
-                result = PrepareAndSend(jsonData);
+                result = PrepareAndSend(deviceId, jsonData);
             }
             catch (Exception ex)
             {
@@ -117,14 +117,14 @@ namespace EventsGateway.Gateway
 
         public void Close()
         {
-            deviceClient = null;
+            deviceClients.Close();
         }
 
-        private TaskWrapper PrepareAndSend(string jsonData)
+        private TaskWrapper PrepareAndSend(string deviceId, string jsonData)
         {
             var msg = PrepareMessage(jsonData);
 
-            var sh = new SafeAction<Message>(m => deviceClient.SendEventAsync(msg), Logger);
+            var sh = new SafeAction<Message>(m => deviceClients[deviceId].SendEventAsync(msg), Logger);
 
             return TaskWrapper.Run(() => sh.SafeInvoke(msg));
         }

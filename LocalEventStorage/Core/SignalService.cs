@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using EventsManager.LocalEventStorage.Abstractions;
 
 namespace EventsManager.LocalEventStorage.Core
@@ -15,35 +13,38 @@ namespace EventsManager.LocalEventStorage.Core
             {
                 if (_signalRepository == null)
                     _signalRepository = new SignalRepository((CacheContext)UnitOfWork?.GetContext());
-
-                return this._signalRepository;
+                
+                return _signalRepository;
             }
         }
 
         public SignalService(IUnitOfWork uow)
             : base(uow)
-        {
-
-        }
+        { }
 
         public void Add(IEnumerable<Signal> signals)
         {
-            this.SignalRepository.Add(signals);
+            SignalRepository.Add(signals);
         }
 
         public void Truncate()
         {
-            this.SignalRepository.Truncate();
+            SignalRepository.Truncate();
         }
 
         public int Count()
         {
-            return this.SignalRepository.Count();
+            return SignalRepository.Count();
         }
 
         public IEnumerable<Signal> GetAll()
         {
-            return this.SignalRepository.GetAll();
+            return SignalRepository.GetAll();
+        }
+
+        public void Dispose()
+        {
+            _uow.Dispose();
         }
     }
 }

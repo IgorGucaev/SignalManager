@@ -7,7 +7,7 @@ using System.Linq;
 namespace EventsManager.LocalEventStorage.Core
 {
     public class BaseRepository<TDbContext, TEntity> : ICacheRepository<TEntity>
-        where TDbContext : DbContext, new()
+        where TDbContext : DbContext
         where TEntity : class
     {
         public bool IsAutoSave { get; protected set; }

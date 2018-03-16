@@ -1,13 +1,10 @@
 ﻿using EventsManager.LocalEventStorage.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EventsManager.LocalEventStorage.Core
 {
     public abstract class UnitOfWork<TDbContext> : IUnitOfWork
-        where TDbContext : DbContext, new()
+        where TDbContext : DbContext
     {
         protected TDbContext _dbContext;
 
@@ -15,11 +12,13 @@ namespace EventsManager.LocalEventStorage.Core
         {
             get
             {
-                if (_dbContext == null)
-                    _dbContext = new TDbContext();
-
                 return _dbContext;
             }
+        }
+
+        public UnitOfWork(TDbContext context)
+        {
+            _dbContext = context;
         }
 
         public virtual void Dispose()
@@ -29,7 +28,7 @@ namespace EventsManager.LocalEventStorage.Core
 
         public DbContext GetContext()
         {
-            return this.Context;
+            return Context;
         }
     }
 }

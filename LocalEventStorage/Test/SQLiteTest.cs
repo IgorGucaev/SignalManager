@@ -1,5 +1,6 @@
 ﻿using EventsManager.LocalEventStorage.Abstractions;
 using EventsManager.LocalEventStorage.Core;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,14 +10,14 @@ using Xunit;
 
 namespace EventsManager.LocalEventStorage.Test
 {
-    public class SQLiteTest
+    public class SQLiteTest : BaseTest
     {
         [Theory]
         [MemberData(nameof(TestDataGenerator.GetRandomAntennaSignalRow), MemberType = typeof(TestDataGenerator))]
         public void SQLite__Insert_Rows(string serializedSignal, DateTime timestamp)
         {
             // Prepare
-            CacheContext db = new CacheContext();
+            CacheContext db = this.GetService<CacheContext>();
 
             // Pre-validate
 
@@ -26,7 +27,6 @@ namespace EventsManager.LocalEventStorage.Test
             db.SaveChanges();
             db.Dispose();
 
-            db = new CacheContext();
             int countAfter = db.Signals.Count();
             string lastData = db.Signals.Last().Data;
             db.Dispose();
@@ -40,7 +40,7 @@ namespace EventsManager.LocalEventStorage.Test
         public void SQLite__Truncate_Table()
         {
             // Prepare
-            SignalRepository signalRepo = new SignalRepository(new CacheContext());
+            SignalRepository signalRepo = new SignalRepository(this.GetService<CacheContext>());
 
             int count = signalRepo.QueryAll.Count();
             if (count == 0)
@@ -61,9 +61,9 @@ namespace EventsManager.LocalEventStorage.Test
         public void SQLite__Insert_Rows__InSingleTransaction_Stress()
         {
             // Prepare
-            SignalRepository signalRepo = new SignalRepository(new CacheContext());
+            SignalRepository signalRepo = new SignalRepository(this.GetService<CacheContext>());
             int countBefore = signalRepo.QueryAll.Count();
-         
+
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             int testSize = 100000;
 
@@ -92,7 +92,7 @@ namespace EventsManager.LocalEventStorage.Test
         public void SQLite_Delete_Rows_Created_Before_Date()
         {
             // Prepare
-            SignalRepository signalRepo = new SignalRepository(new CacheContext());
+            SignalRepository signalRepo = new SignalRepository(this.GetService<CacheContext>());
             int count = signalRepo.QueryAll.Count();
 
             // Pre-validate
@@ -105,7 +105,7 @@ namespace EventsManager.LocalEventStorage.Test
                 Signal.New(deviceId: "fooDevice", data: Guid.NewGuid().ToString(), timestamp: DateTime.Now.AddMinutes(-2)),
                 Signal.New(deviceId: "fooDevice", data: topGuid, timestamp: border)
             });
-            
+
             Assert.Equal(3, signalRepo.QueryAll.Count());
 
             // Perform
@@ -113,9 +113,34 @@ namespace EventsManager.LocalEventStorage.Test
             signalRepo.Delete(toDelete); // Truncate();
 
             // Post-validate
-
             Assert.Equal(1, signalRepo.QueryAll.Count());
             Assert.Equal(topGuid, signalRepo.QueryAll.First().Data);
+        }
+
+        /// <summary>
+        /// Checks that the database is restored if necessary
+        /// </summary>
+        [Fact]
+        public void SQLite_DatabaseFile_Restoring()
+        {
+            // Prepare
+            string tempDbPath = System.IO.Path.GetFileName(System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), ".db"));
+            CacheSettings settings = new CacheSettings
+            {
+                DbFilepath = tempDbPath,
+                CreateDbScriptPath = "cache.sql"
+            };
+
+            // Pre-validate
+            Assert.False(System.IO.File.Exists(settings.DbFilepath)); // Database file must be saved
+            Assert.True(System.IO.File.Exists(settings.CreateDbScriptPath));
+
+            // Perform
+            CacheContext db = new CacheContext(settings);
+            int count = db.Signals.Count();
+
+            // Post-validate
+            System.IO.File.Delete(tempDbPath);
         }
     }
 }

@@ -7,23 +7,37 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using EventManager.CloudEventHub.Core;
+using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace EventBroker
 {
     class Program
     {
+        public static IConfiguration Configuration { get; set; }
+
         static void Main(string[] args)
         {
-            string fooDevice = "fooDevice";
-            string barDevice = "barDevice";
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json");
+
+            Configuration = builder.Build();
+
+            string deviceId = Configuration["devices:0:Name"];
+            string deviceBinding = Configuration["devices:0:Binding"];
+
 
             IEventManager manager = new ServiceCollection()
              .AddSingleton<ILogger, DummyLogger>()
+             .AddCacheContext(cacheSettings => {
+                 cacheSettings.CreateDbScriptPath = Configuration["createDbScriptPath"];
+                 cacheSettings.DbFilepath = Configuration["dbFilepath"];
+             })
              .AddTransient<IUnitOfWork, BaseUnitOfWork>()
              .AddTransient<ISignalService, SignalService>()
              .AddCloudAdapter(senderSettings => {
-                 senderSettings.AppendBinding(fooDevice, "HostName=technobee-infrastructure-testbed-01-iot-hub.azure-devices.net;DeviceId=myDevice;SharedAccessKey=kZTuwNbRvnmW5nz6XBvORD3GDo+K5bZdWCKlQBXACjA=");
-                 senderSettings.AppendBinding(barDevice, "HostName=technobee-infrastructure-testbed-01-iot-hub.azure-devices.net;DeviceId=barDevice;SharedAccessKey=kZTuwNbRvnmW5nz6XBvORD3GDo+K5bZdWCKlQBXACjA=");
+                 senderSettings.AppendBinding(deviceId, deviceBinding);
              })
              .AddTransient<IEventManager, EventsManager.Core.EventManager>()
              .BuildServiceProvider()
@@ -46,7 +60,7 @@ namespace EventBroker
             foreach (string signal in data)
             {
                 flag = !flag;
-                manager.RegisterEvent(Signal.New(flag ? fooDevice : barDevice, signal, DateTime.Now));
+                manager.RegisterEvent(Signal.New(deviceId, signal, DateTime.Now));
             }
             Console.WriteLine($"{testCount} events queued");
 

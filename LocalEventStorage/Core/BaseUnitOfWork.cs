@@ -7,5 +7,10 @@ namespace EventsManager.LocalEventStorage.Core
 {
     public class BaseUnitOfWork : UnitOfWork<CacheContext>
     {
+        public BaseUnitOfWork(CacheContext context)
+           : base(context)
+        {
+
+        }
     }
 }

@@ -19,6 +19,7 @@ namespace EventsManager.Test
             this._Provider = new ServiceCollection()
                 .AddTransient<IUnitOfWork, BaseUnitOfWork>()
                 .AddTransient<ISignalService, SignalService>()
+                .AddCacheContext(cacheSettings => { cacheSettings.DbFilepath = "cache.db"; })
                 .AddTransient<ILogger, DummyLogger>()
                   .AddCloudAdapter(senderSettings => {
                       senderSettings.AppendBinding("fooDevice", "HostName=technobee-infrastructure-testbed-01-iot-hub.azure-devices.net;DeviceId=myDevice;SharedAccessKey=kZTuwNbRvnmW5nz6XBvORD3GDo+K5bZdWCKlQBXACjA=");

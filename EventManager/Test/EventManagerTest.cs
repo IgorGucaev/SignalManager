@@ -32,7 +32,7 @@ namespace EventsManager.Test
                 manager.RegisterEvent(Signal.New("fooDevice", signal, DateTime.Now));
                 Thread.Sleep(5);
             }
-            Thread.Sleep(60 * 1000); // Wait while manager save data to the end
+            Thread.Sleep(10 * 1000); // Wait while manager save data to the end
 
             // Post-validate
             int countAfter = signals.Count();

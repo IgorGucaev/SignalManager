@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\CloudEventHub\Common\EventsManager.CloudEventHub.Common.csproj" />
     <ProjectReference Include="..\Abstractions\EventsManager.LocalEventStorage.Abstractions.csproj" />
   </ItemGroup>
 

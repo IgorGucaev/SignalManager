@@ -15,6 +15,9 @@ namespace EventsManager.LocalEventStorage.Test
         public BaseTest()
         {
             this._Provider = new ServiceCollection()
+                .AddCacheContext(setupAction => {
+                    setupAction.DbFilepath = "cache.db";
+                })
                 .AddTransient<IUnitOfWork, BaseUnitOfWork>()
                 .AddTransient<ISignalService, SignalService>()
                 .BuildServiceProvider();

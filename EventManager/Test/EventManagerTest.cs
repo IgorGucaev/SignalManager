@@ -39,5 +39,11 @@ namespace EventsManager.Test
             Assert.Equal(0, countAfter);
             manager.Stop();
         }
+
+        [Fact]
+        public void Test_AzureUnavailable()
+        {
+
+        }
     }
 }
